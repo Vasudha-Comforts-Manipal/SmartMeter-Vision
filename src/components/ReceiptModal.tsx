@@ -13,11 +13,6 @@ const UNIT_CONVERSION_KG = 2.3
 const DEFAULT_MINIMUM_CHARGE = 25
 const DUE_DATE_OFFSET_DAYS = 5
 
-const formatDateTime = (timestamp?: number) => {
-  if (!timestamp) return '—'
-  return new Date(timestamp).toLocaleString()
-}
-
 const formatDateOnly = (timestamp?: number) => {
   if (!timestamp) return '—'
   return new Date(timestamp).toLocaleDateString('en-IN')
