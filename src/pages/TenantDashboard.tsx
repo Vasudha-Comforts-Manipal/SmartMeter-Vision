@@ -8,7 +8,7 @@ import ReadingCard from '../components/ReadingCard'
 
 import { useAuthState } from '../services/auth'
 
-import { getFlatByUserUid } from '../services/flats'
+import { getFlatByUserId } from '../services/flats'
 
 import { getTenantReadings } from '../services/readings'
 
@@ -44,7 +44,7 @@ const TenantDashboard = () => {
 
     const run = async () => {
 
-      if (!user?.uid) {
+      if (!user?.id) {
 
         setLoading(false)
 
@@ -52,7 +52,7 @@ const TenantDashboard = () => {
 
       }
 
-      const tenantFlat = await getFlatByUserUid(user.uid)
+      const tenantFlat = await getFlatByUserId(user.id)
 
       setFlat(tenantFlat)
 
@@ -200,7 +200,7 @@ const TenantDashboard = () => {
 
     return (
 
-      <Layout email={user.email} role="tenant" subtitle="Loading your data..." name={flat?.tenantName ?? null}>
+      <Layout username={user.username} role="tenant" subtitle="Loading your data..." name={flat?.tenantName ?? null}>
 
         <div className="card">Loading...</div>
 
@@ -216,7 +216,7 @@ const TenantDashboard = () => {
 
     return (
 
-      <Layout email={user.email} role="tenant" subtitle="No flat linked to this account" name={flat?.tenantName ?? null}>
+      <Layout username={user.username} role="tenant" subtitle="No flat linked to this account" name={flat?.tenantName ?? null}>
 
         <div className="card">
 
@@ -236,7 +236,7 @@ const TenantDashboard = () => {
 
     <Layout
 
-      email={user.email}
+      username={user.username}
 
       role="tenant"
 

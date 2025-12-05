@@ -41,13 +41,13 @@ const ReadingCard = ({ reading, previousImageUrl, occupantName }: Props) => {
           <span className={`status ${reading.status}`}>{reading.status}</span>
         </div>
         <div className="stack">
-          <div className="row">
+          <div className="row" style={{ flexWrap: 'wrap' }}>
             <strong>OCR reading:</strong> <span>{formatNumber(reading.ocrReading)}</span>
             {reading.ocrConfidence ? (
               <span className="pill">Confidence {reading.ocrConfidence.toFixed(0)}%</span>
             ) : null}
           </div>
-          <div className="row">
+          <div className="row" style={{ flexWrap: 'wrap' }}>
             <strong>Approved:</strong>{' '}
             <span>
               {reading.correctedReading !== null && reading.correctedReading !== undefined
@@ -57,17 +57,17 @@ const ReadingCard = ({ reading, previousImageUrl, occupantName }: Props) => {
                   : 'Pending'}
             </span>
           </div>
-          <div className="row">
+          <div className="row" style={{ flexWrap: 'wrap' }}>
             <strong>Units:</strong> <span>{formatNumber(reading.unitsUsed)}</span>
             <strong>Amount:</strong> <span>{formatNumber(reading.amount)}</span>
           </div>
-          <div className="row">
-            <strong>Created:</strong> <span>{formatDate(reading.createdAt)}</span>
-            <strong>Approved:</strong> <span>{formatDate(reading.approvedAt)}</span>
+          <div className="row" style={{ flexWrap: 'wrap' }}>
+            <strong>Created:</strong> <span style={{ wordBreak: 'break-word' }}>{formatDate(reading.createdAt)}</span>
+            <strong>Approved:</strong> <span style={{ wordBreak: 'break-word' }}>{formatDate(reading.approvedAt)}</span>
           </div>
           {reading.status === 'rejected' && reading.rejectionReason ? (
-            <div className="row">
-              <strong>Rejection reason:</strong> <span>{reading.rejectionReason}</span>
+            <div className="row" style={{ flexWrap: 'wrap' }}>
+              <strong>Rejection reason:</strong> <span className="text-wrap">{reading.rejectionReason}</span>
             </div>
           ) : null}
           <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
@@ -93,7 +93,7 @@ const ReadingCard = ({ reading, previousImageUrl, occupantName }: Props) => {
             )}
           </div>
           {reading.status === 'approved' ? (
-            <div className="row">
+            <div className="row" style={{ flexWrap: 'wrap' }}>
               <button className="btn btn-secondary" type="button" onClick={() => setShowReceipt(true)}>
                 Download receipt
               </button>

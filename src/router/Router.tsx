@@ -3,6 +3,7 @@ import LoginPage from '../pages/LoginPage'
 import TenantDashboard from '../pages/TenantDashboard'
 import AdminDashboard from '../pages/AdminDashboard'
 import AdminFlatsPage from '../pages/AdminFlatsPage'
+import AdminUsersPage from '../pages/AdminUsersPage'
 import ProtectedRoute from '../components/ProtectedRoute'
 
 const Router = () => {
@@ -31,6 +32,14 @@ const Router = () => {
           element={
             <ProtectedRoute requiredRole="admin">
               <AdminFlatsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <AdminUsersPage />
             </ProtectedRoute>
           }
         />

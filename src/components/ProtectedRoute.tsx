@@ -8,11 +8,6 @@ interface Props {
   requiredRole?: UserRole
 }
 
-export function getUserRole(email?: string | null): UserRole {
-  if (!email) return 'tenant'
-  return email.toLowerCase().startsWith('admin') ? 'admin' : 'tenant'
-}
-
 const ProtectedRoute = ({ children, requiredRole }: Props) => {
   const { user, loading } = useAuthState()
 
@@ -30,8 +25,7 @@ const ProtectedRoute = ({ children, requiredRole }: Props) => {
     return <Navigate to="/login" replace />
   }
 
-  const role = getUserRole(user.email)
-  if (requiredRole && role !== requiredRole) {
+  if (requiredRole && user.role !== requiredRole) {
     return <Navigate to="/login" replace />
   }
 

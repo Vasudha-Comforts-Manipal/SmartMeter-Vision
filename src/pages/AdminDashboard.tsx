@@ -17,6 +17,7 @@ import type { Reading, Flat } from '../types/models'
 import { getGlobalTariff, updateGlobalTariff, getMinimumPrice, updateMinimumPrice } from '../services/settings'
 import { getAllFlats, updateFlat } from '../services/flats'
 import ImageViewerModal from '../components/ImageViewerModal'
+import ReceiptModal from '../components/ReceiptModal'
 
 const formatNumber = (value: number | null | undefined): string => {
   if (value === null || value === undefined) return '—'
@@ -43,6 +44,8 @@ const AdminDashboard = () => {
   const [flats, setFlats] = useState<Flat[]>([])
   const [initialReadings, setInitialReadings] = useState<Record<string, string>>({})
   const [savingInitialReading, setSavingInitialReading] = useState<string | null>(null)
+  const [viewingReceipt, setViewingReceipt] = useState<Reading | null>(null)
+  const [flatIdToTenantName, setFlatIdToTenantName] = useState<Record<string, string>>({})
 
   // Map each flat to its latest approved reading's image URL.
   // This is used to show "previous reading" images alongside the
@@ -124,6 +127,14 @@ const AdminDashboard = () => {
         }
       })
       setInitialReadings(initialReadingsState)
+      
+      // Create a mapping from flatId to tenantName for receipts
+      const tenantNameMap: Record<string, string> = {}
+      allFlats.forEach((flat) => {
+        tenantNameMap[flat.flatId] = flat.tenantName || ''
+      })
+      setFlatIdToTenantName(tenantNameMap)
+      
       const ids = new Set<string>()
       approvedItems.forEach((r) => ids.add(r.flatId))
       rejectedItems.forEach((r) => ids.add(r.flatId))
@@ -292,19 +303,24 @@ const AdminDashboard = () => {
   if (!user) return null
 
   return (
-    <Layout email={user.email} role="admin" subtitle="Review and approve meter readings.">
+    <Layout username={user.username} role="admin" subtitle="Review and approve meter readings.">
       <div className="section">
         <div className="card">
           <div className="card-header">
             <div>
-              <h2 className="card-title">Flats</h2>
+              <h2 className="card-title">Flats & Users</h2>
               <p className="card-subtitle">
-                Create and manage flat entries for tenants.
+                Create and manage flat entries and user accounts.
               </p>
             </div>
-            <Link className="btn btn-secondary" to="/admin/flats">
-              Add / edit flats
-            </Link>
+            <div className="mobile-stack" style={{ gap: 8 }}>
+              <Link className="btn btn-secondary mobile-full-width" to="/admin/flats">
+                Add tenant / flat
+              </Link>
+              <Link className="btn btn-secondary mobile-full-width" to="/admin/users">
+                Manage users
+              </Link>
+            </div>
           </div>
         </div>
         <div className="card">
@@ -320,18 +336,17 @@ const AdminDashboard = () => {
             <label className="label" htmlFor="global-tariff">
               Global tariff (cost per unit/KG)
             </label>
-            <div className="row">
+            <div className="mobile-stack" style={{ gap: 8 }}>
               <input
                 id="global-tariff"
-                className="input"
+                className="input input-inline mobile-full-width"
                 type="number"
                 step="0.01"
                 value={globalTariff}
                 onChange={(e) => setGlobalTariff(Number(e.target.value) || 0)}
-                style={{ width: 160 }}
               />
               <button
-                className="btn btn-secondary"
+                className="btn btn-secondary mobile-full-width"
                 type="button"
                 disabled={savingGlobalTariff}
                 onClick={handleSaveGlobalTariff}
@@ -342,18 +357,17 @@ const AdminDashboard = () => {
             <label className="label" htmlFor="minimum-price">
               Minimum price
             </label>
-            <div className="row">
+            <div className="mobile-stack" style={{ gap: 8 }}>
               <input
                 id="minimum-price"
-                className="input"
+                className="input input-inline mobile-full-width"
                 type="number"
                 step="0.01"
                 value={minimumPrice}
                 onChange={(e) => setMinimumPrice(Number(e.target.value) || 0)}
-                style={{ width: 160 }}
               />
               <button
-                className="btn btn-secondary"
+                className="btn btn-secondary mobile-full-width"
                 type="button"
                 disabled={savingMinimumPrice}
                 onClick={handleSaveMinimumPrice}
@@ -375,49 +389,91 @@ const AdminDashboard = () => {
               </div>
             </div>
             <div className="stack">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Flat ID</th>
-                    <th>Tenant Name</th>
-                    <th>Initial Reading</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {flats.map((flat) => (
-                    <tr key={flat.id}>
-                      <td>
-                        <strong>{flat.flatId || flat.id}</strong>
-                      </td>
-                      <td>{flat.tenantName ?? '—'}</td>
-                      <td>
-                        <input
-                          className="input"
-                          type="number"
-                          step="0.01"
-                          placeholder="Enter initial reading"
-                          value={initialReadings[flat.id] ?? ''}
-                          onChange={(e) =>
-                            setInitialReadings((prev) => ({ ...prev, [flat.id]: e.target.value }))
-                          }
-                          style={{ width: 160 }}
-                        />
-                      </td>
-                      <td>
-                        <button
-                          className="btn btn-secondary"
-                          type="button"
-                          disabled={savingInitialReading === flat.id}
-                          onClick={() => handleSaveInitialReading(flat.id)}
-                        >
-                          {savingInitialReading === flat.id ? 'Saving…' : 'Save'}
-                        </button>
-                      </td>
+              {/* Desktop table view */}
+              <div className="table-container hide-on-mobile">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Flat ID</th>
+                      <th>Tenant Name</th>
+                      <th>Initial Reading</th>
+                      <th>Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {flats.map((flat) => (
+                      <tr key={flat.id}>
+                        <td>
+                          <strong>{flat.flatId || flat.id}</strong>
+                        </td>
+                        <td>{flat.tenantName ?? '—'}</td>
+                        <td>
+                          <input
+                            className="input input-inline"
+                            type="number"
+                            step="0.01"
+                            placeholder="Enter initial reading"
+                            value={initialReadings[flat.id] ?? ''}
+                            onChange={(e) =>
+                              setInitialReadings((prev) => ({ ...prev, [flat.id]: e.target.value }))
+                            }
+                          />
+                        </td>
+                        <td>
+                          <button
+                            className="btn btn-secondary"
+                            type="button"
+                            disabled={savingInitialReading === flat.id}
+                            onClick={() => handleSaveInitialReading(flat.id)}
+                          >
+                            {savingInitialReading === flat.id ? 'Saving…' : 'Save'}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              
+              {/* Mobile card view */}
+              <div className="mobile-card-list show-on-mobile">
+                {flats.map((flat) => (
+                  <div key={flat.id} className="mobile-card-item">
+                    <div className="mobile-card-row">
+                      <span className="mobile-card-label">Flat ID</span>
+                      <span className="mobile-card-value">{flat.flatId || flat.id}</span>
+                    </div>
+                    <div className="mobile-card-row">
+                      <span className="mobile-card-label">Tenant Name</span>
+                      <span className="mobile-card-value">{flat.tenantName ?? '—'}</span>
+                    </div>
+                    <div>
+                      <label className="mobile-card-label">Initial Reading</label>
+                      <input
+                        className="input"
+                        type="number"
+                        step="0.01"
+                        placeholder="Enter initial reading"
+                        value={initialReadings[flat.id] ?? ''}
+                        onChange={(e) =>
+                          setInitialReadings((prev) => ({ ...prev, [flat.id]: e.target.value }))
+                        }
+                        style={{ marginTop: 4 }}
+                      />
+                    </div>
+                    <div className="mobile-card-actions">
+                      <button
+                        className="btn btn-secondary"
+                        type="button"
+                        disabled={savingInitialReading === flat.id}
+                        onClick={() => handleSaveInitialReading(flat.id)}
+                      >
+                        {savingInitialReading === flat.id ? 'Saving…' : 'Save'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
@@ -451,9 +507,9 @@ const AdminDashboard = () => {
                         <span className="pill">Confidence {reading.ocrConfidence.toFixed(0)}%</span>
                       ) : null}
                     </div>
-                    <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+                    <div className="mobile-stack" style={{ gap: 8 }}>
                       <button
-                        className="btn btn-tertiary"
+                        className="btn btn-tertiary mobile-full-width"
                         type="button"
                         onClick={() => setViewingImage(reading.imageUrl)}
                       >
@@ -461,7 +517,7 @@ const AdminDashboard = () => {
                       </button>
                       {latestApprovedImageByFlatId[reading.flatId] ? (
                         <button
-                          className="btn btn-tertiary"
+                          className="btn btn-tertiary mobile-full-width"
                           type="button"
                           onClick={() =>
                             setViewingImage(latestApprovedImageByFlatId[reading.flatId]!)
@@ -501,16 +557,16 @@ const AdminDashboard = () => {
                         setRejectionReasons((prev) => ({ ...prev, [reading.id]: e.target.value }))
                       }
                     />
-                    <div className="row">
+                    <div className="mobile-stack">
                       <button
-                        className="btn btn-primary"
+                        className="btn btn-primary mobile-full-width"
                         disabled={submitting === reading.id}
                         onClick={() => handleApprove(reading)}
                       >
                         {submitting === reading.id ? 'Approving…' : 'Approve'}
                       </button>
                       <button
-                        className="btn btn-ghost"
+                        className="btn btn-ghost mobile-full-width"
                         disabled={submitting === reading.id}
                         onClick={() => handleReject(reading)}
                       >
@@ -530,7 +586,7 @@ const AdminDashboard = () => {
               <h2 className="card-title">History</h2>
               <p className="card-subtitle">Track approved and rejected readings.</p>
             </div>
-            <div className="row">
+            <div className="mobile-stack" style={{ gap: 8 }}>
               <div className="row" role="tablist" style={{ gap: 8 }}>
                 <button
                   className={`btn btn-ghost ${historyTab === 'approved' ? 'active' : ''}`}
@@ -548,7 +604,7 @@ const AdminDashboard = () => {
                 </button>
               </div>
               <select
-                className="select"
+                className="select input-inline mobile-full-width"
                 value={flatFilter}
                 onChange={(e) => setFlatFilter(e.target.value)}
               >
@@ -568,123 +624,275 @@ const AdminDashboard = () => {
               <p className="muted">No approved readings yet.</p>
             ) : (
               <div className="stack">
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>Flat</th>
-                      <th>Period</th>
-                      <th>Previous</th>
-                      <th>Reading</th>
-                      <th>Units</th>
-                      <th>Amount</th>
-                      <th>Tariff used</th>
-                      <th>Approved</th>
-                      <th>Image</th>
-                      <th>Re-open</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {approvedHistory.map((item) => (
-                      <tr key={item.id}>
-                        <td>{item.flatId}</td>
-                        <td>{item.yearMonth ?? '—'}</td>
-                        <td>{formatNumber(item.previousReading)}</td>
-                        <td>
-                          {item.correctedReading !== null && item.correctedReading !== undefined
-                            ? formatNumber(item.correctedReading)
-                            : formatNumber(item.ocrReading)}
-                        </td>
-                        <td>{formatNumber(item.unitsUsed)}</td>
-                        <td>{formatNumber(item.amount)}</td>
-                        <td>{formatNumber(item.tariffAtApproval)}</td>
-                        <td>
-                          {item.approvedAt ? new Date(item.approvedAt).toLocaleString() : '—'}
-                        </td>
-                        <td>
-                          <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
-                            <button
-                              className="pill"
-                              type="button"
-                              disabled={!item.imageUrl}
-                              onClick={() => item.imageUrl && setViewingImage(item.imageUrl)}
-                            >
-                              Current photo
-                            </button>
-                            {previousApprovedImageByReadingId[item.id] ? (
+                {/* Desktop table view */}
+                <div className="table-container hide-on-mobile">
+                  <table className="table">
+                    <thead>
+                      <tr>
+                        <th>Flat</th>
+                        <th>Period</th>
+                        <th>Previous</th>
+                        <th>Reading</th>
+                        <th>Units</th>
+                        <th>Amount</th>
+                        <th>Tariff used</th>
+                        <th>Approved</th>
+                        <th>Image</th>
+                        <th>Receipt</th>
+                        <th>Re-open</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {approvedHistory.map((item) => (
+                        <tr key={item.id}>
+                          <td>{item.flatId}</td>
+                          <td>{item.yearMonth ?? '—'}</td>
+                          <td>{formatNumber(item.previousReading)}</td>
+                          <td>
+                            {item.correctedReading !== null && item.correctedReading !== undefined
+                              ? formatNumber(item.correctedReading)
+                              : formatNumber(item.ocrReading)}
+                          </td>
+                          <td>{formatNumber(item.unitsUsed)}</td>
+                          <td>{formatNumber(item.amount)}</td>
+                          <td>{formatNumber(item.tariffAtApproval)}</td>
+                          <td>
+                            {item.approvedAt ? new Date(item.approvedAt).toLocaleString() : '—'}
+                          </td>
+                          <td>
+                            <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
                               <button
                                 className="pill"
                                 type="button"
-                                onClick={() =>
-                                  setViewingImage(previousApprovedImageByReadingId[item.id]!)
-                                }
+                                disabled={!item.imageUrl}
+                                onClick={() => item.imageUrl && setViewingImage(item.imageUrl)}
                               >
-                                Previous photo
+                                Current photo
                               </button>
-                            ) : (
-                              <span className="muted small">No previous photo</span>
-                            )}
-                          </div>
-                        </td>
-                        <td>
+                              {previousApprovedImageByReadingId[item.id] ? (
+                                <button
+                                  className="pill"
+                                  type="button"
+                                  onClick={() =>
+                                    setViewingImage(previousApprovedImageByReadingId[item.id]!)
+                                  }
+                                >
+                                  Previous photo
+                                </button>
+                              ) : (
+                                <span className="muted small">No previous photo</span>
+                              )}
+                            </div>
+                          </td>
+                          <td>
+                            <button
+                              className="btn btn-tertiary"
+                              type="button"
+                              onClick={() => setViewingReceipt(item)}
+                            >
+                              View receipt
+                            </button>
+                          </td>
+                          <td>
+                            <button
+                              className="btn btn-ghost"
+                              type="button"
+                              disabled={submitting === item.id}
+                              onClick={() => handleReopen(item)}
+                            >
+                              {submitting === item.id ? 'Re-opening…' : 'Re-open'}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                
+                {/* Mobile card view */}
+                <div className="mobile-card-list show-on-mobile">
+                  {approvedHistory.map((item) => (
+                    <div key={item.id} className="mobile-card-item">
+                      <div className="mobile-card-row">
+                        <span className="mobile-card-label">Flat</span>
+                        <span className="mobile-card-value">{item.flatId}</span>
+                      </div>
+                      <div className="mobile-card-row">
+                        <span className="mobile-card-label">Period</span>
+                        <span className="mobile-card-value">{item.yearMonth ?? '—'}</span>
+                      </div>
+                      <div className="mobile-card-row">
+                        <span className="mobile-card-label">Previous</span>
+                        <span className="mobile-card-value">{formatNumber(item.previousReading)}</span>
+                      </div>
+                      <div className="mobile-card-row">
+                        <span className="mobile-card-label">Reading</span>
+                        <span className="mobile-card-value">
+                          {item.correctedReading !== null && item.correctedReading !== undefined
+                            ? formatNumber(item.correctedReading)
+                            : formatNumber(item.ocrReading)}
+                        </span>
+                      </div>
+                      <div className="mobile-card-row">
+                        <span className="mobile-card-label">Units</span>
+                        <span className="mobile-card-value">{formatNumber(item.unitsUsed)}</span>
+                      </div>
+                      <div className="mobile-card-row">
+                        <span className="mobile-card-label">Amount</span>
+                        <span className="mobile-card-value">{formatNumber(item.amount)}</span>
+                      </div>
+                      <div className="mobile-card-row">
+                        <span className="mobile-card-label">Tariff</span>
+                        <span className="mobile-card-value">{formatNumber(item.tariffAtApproval)}</span>
+                      </div>
+                      <div className="mobile-card-row">
+                        <span className="mobile-card-label">Approved</span>
+                        <span className="mobile-card-value" style={{ fontSize: 11 }}>
+                          {item.approvedAt ? new Date(item.approvedAt).toLocaleString() : '—'}
+                        </span>
+                      </div>
+                      <div className="mobile-card-actions">
+                        <button
+                          className="btn btn-tertiary"
+                          type="button"
+                          disabled={!item.imageUrl}
+                          onClick={() => item.imageUrl && setViewingImage(item.imageUrl)}
+                        >
+                          Current photo
+                        </button>
+                        {previousApprovedImageByReadingId[item.id] ? (
                           <button
-                            className="btn btn-ghost"
+                            className="btn btn-tertiary"
                             type="button"
-                            disabled={submitting === item.id}
-                            onClick={() => handleReopen(item)}
+                            onClick={() =>
+                              setViewingImage(previousApprovedImageByReadingId[item.id]!)
+                            }
                           >
-                            {submitting === item.id ? 'Re-opening…' : 'Re-open'}
+                            Previous photo
                           </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        ) : null}
+                        <button
+                          className="btn btn-secondary"
+                          type="button"
+                          onClick={() => setViewingReceipt(item)}
+                        >
+                          View receipt
+                        </button>
+                        <button
+                          className="btn btn-ghost"
+                          type="button"
+                          disabled={submitting === item.id}
+                          onClick={() => handleReopen(item)}
+                        >
+                          {submitting === item.id ? 'Re-opening…' : 'Re-open'}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )
           ) : rejectedHistory.length === 0 ? (
             <p className="muted">No rejected readings.</p>
           ) : (
             <div className="stack">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Flat</th>
-                    <th>Period</th>
-                    <th>Reading</th>
-                    <th>Reason</th>
-                    <th>Created</th>
-                    <th>Image</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rejectedHistory.map((item) => (
-                    <tr key={item.id}>
-                      <td>{item.flatId}</td>
-                      <td>{item.yearMonth ?? '—'}</td>
-                      <td>
+              {/* Desktop table view */}
+              <div className="table-container hide-on-mobile">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Flat</th>
+                      <th>Period</th>
+                      <th>Reading</th>
+                      <th>Reason</th>
+                      <th>Created</th>
+                      <th>Image</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rejectedHistory.map((item) => (
+                      <tr key={item.id}>
+                        <td>{item.flatId}</td>
+                        <td>{item.yearMonth ?? '—'}</td>
+                        <td>
+                          {item.correctedReading !== null && item.correctedReading !== undefined
+                            ? formatNumber(item.correctedReading)
+                            : formatNumber(item.ocrReading)}
+                        </td>
+                        <td>{item.rejectionReason ?? '—'}</td>
+                        <td>
+                          {item.createdAt ? new Date(item.createdAt).toLocaleString() : '—'}
+                        </td>
+                        <td>
+                          <a className="pill" href={item.imageUrl} target="_blank" rel="noreferrer">
+                            Open
+                          </a>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              
+              {/* Mobile card view */}
+              <div className="mobile-card-list show-on-mobile">
+                {rejectedHistory.map((item) => (
+                  <div key={item.id} className="mobile-card-item">
+                    <div className="mobile-card-row">
+                      <span className="mobile-card-label">Flat</span>
+                      <span className="mobile-card-value">{item.flatId}</span>
+                    </div>
+                    <div className="mobile-card-row">
+                      <span className="mobile-card-label">Period</span>
+                      <span className="mobile-card-value">{item.yearMonth ?? '—'}</span>
+                    </div>
+                    <div className="mobile-card-row">
+                      <span className="mobile-card-label">Reading</span>
+                      <span className="mobile-card-value">
                         {item.correctedReading !== null && item.correctedReading !== undefined
                           ? formatNumber(item.correctedReading)
                           : formatNumber(item.ocrReading)}
-                      </td>
-                      <td>{item.rejectionReason ?? '—'}</td>
-                      <td>
+                      </span>
+                    </div>
+                    <div className="mobile-card-row" style={{ alignItems: 'flex-start' }}>
+                      <span className="mobile-card-label">Reason</span>
+                      <span className="mobile-card-value" style={{ fontSize: 12, fontWeight: 500 }}>
+                        {item.rejectionReason ?? '—'}
+                      </span>
+                    </div>
+                    <div className="mobile-card-row">
+                      <span className="mobile-card-label">Created</span>
+                      <span className="mobile-card-value" style={{ fontSize: 11 }}>
                         {item.createdAt ? new Date(item.createdAt).toLocaleString() : '—'}
-                      </td>
-                      <td>
-                        <a className="pill" href={item.imageUrl} target="_blank" rel="noreferrer">
-                          Open
-                        </a>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </span>
+                    </div>
+                    <div className="mobile-card-actions">
+                      <a
+                        className="btn btn-tertiary"
+                        href={item.imageUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ textDecoration: 'none' }}
+                      >
+                        Open image
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
       </div>
       {viewingImage && (
         <ImageViewerModal imageUrl={viewingImage} onClose={() => setViewingImage(null)} />
+      )}
+      {viewingReceipt && (
+        <ReceiptModal
+          reading={viewingReceipt}
+          occupantName={flatIdToTenantName[viewingReceipt.flatId] || null}
+          onClose={() => setViewingReceipt(null)}
+        />
       )}
     </Layout>
   )

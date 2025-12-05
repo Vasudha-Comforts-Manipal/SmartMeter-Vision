@@ -2,9 +2,9 @@ import { collection, doc, getDoc, getDocs, limit, query, setDoc, updateDoc, wher
 import { db } from './firebase'
 import type { Flat } from '../types/models'
 
-export async function getFlatByUserUid(uid: string): Promise<Flat | null> {
+export async function getFlatByUserId(userId: string): Promise<Flat | null> {
   const flatsRef = collection(db, 'flats')
-  const q = query(flatsRef, where('userUid', '==', uid), limit(1))
+  const q = query(flatsRef, where('userId', '==', userId), limit(1))
   const snapshot = await getDocs(q)
   if (snapshot.empty) return null
   const docSnap = snapshot.docs[0]
@@ -37,7 +37,7 @@ export type NewFlatInput = {
   flatId: string
   tenantName?: string
   tariffPerUnit: number
-  userUid: string
+  userId: string
   initialReading?: number | null
 }
 

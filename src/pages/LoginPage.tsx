@@ -2,11 +2,10 @@ import type { FormEvent } from 'react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { login } from '../services/auth'
-import { getUserRole } from '../components/ProtectedRoute'
 
 const LoginPage = () => {
   const navigate = useNavigate()
-  const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -16,9 +15,8 @@ const LoginPage = () => {
     setError(null)
     setLoading(true)
     try {
-      await login(email, password)
-      const role = getUserRole(email)
-      navigate(role === 'admin' ? '/admin' : '/tenant', { replace: true })
+      const user = await login(username, password)
+      navigate(user.role === 'admin' ? '/admin' : '/tenant', { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')
     } finally {
@@ -29,7 +27,7 @@ const LoginPage = () => {
   return (
     <div className="app-shell">
       <div className="content-container">
-        <div className="card" style={{ maxWidth: 480, margin: '0 auto' }}>
+        <div className="card" style={{ maxWidth: '480px', width: '100%', margin: '0 auto' }}>
           <div className="card-header">
             <div>
               <h1 className="card-title">SmartMeter Vision</h1>
@@ -38,16 +36,16 @@ const LoginPage = () => {
           </div>
           <form className="stack" onSubmit={handleSubmit}>
             <div>
-              <label className="label" htmlFor="email">
-                Email
+              <label className="label" htmlFor="username">
+                Username
               </label>
               <input
-                id="email"
+                id="username"
                 className="input"
-                type="email"
-                placeholder="flat101@building.com or admin@building.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                type="text"
+                placeholder="Enter your username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 required
               />
             </div>

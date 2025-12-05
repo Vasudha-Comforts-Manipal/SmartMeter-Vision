@@ -1,5 +1,17 @@
 export type UserRole = 'tenant' | 'admin'
 
+/**
+ * Application-level user used for authentication and authorization.
+ * Backed by a Firestore document in the `users` collection.
+ * The Firestore document also stores a `passwordHash`, which is intentionally
+ * omitted here so it never leaks into UI components.
+ */
+export interface User {
+  id: string
+  username: string
+  role: UserRole
+}
+
 export interface Flat {
   id: string
   flatId: string
@@ -9,7 +21,10 @@ export interface Flat {
    * Admin can update this over time; historic readings store the applied tariff in the Reading itself.
    */
   tariffPerUnit: number
-  userUid: string
+  /**
+   * ID of the `users` document that owns this flat.
+   */
+  userId: string
   /**
    * Initial/starting meter reading for this flat.
    * Used as the previous reading when calculating the first approved reading.

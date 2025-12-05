@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import Layout from '../components/Layout'
 import { useAuthState } from '../services/auth'
 import { createFlat } from '../services/flats'
+import { createUser } from '../services/users'
 
 const AdminFlatsPage = () => {
   const { user } = useAuthState()
@@ -13,7 +14,8 @@ const AdminFlatsPage = () => {
   const [initialReading, setInitialReading] = useState('')
   const [tariffPerUnit, setTariffPerUnit] = useState('')
   const [tenantName, setTenantName] = useState('')
-  const [userUid, setUserUid] = useState('')
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
 
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -34,8 +36,12 @@ const AdminFlatsPage = () => {
       setError('Tariff per unit is required.')
       return
     }
-    if (!userUid.trim()) {
-      setError('User UID is required.')
+    if (!username.trim()) {
+      setError('Username is required.')
+      return
+    }
+    if (!password.trim()) {
+      setError('Password is required.')
       return
     }
 
@@ -54,25 +60,31 @@ const AdminFlatsPage = () => {
 
     try {
       setSubmitting(true)
+      
+      // First create the user
+      const userId = await createUser(username.trim(), password, 'tenant', flatId.trim())
+      
+      // Then create the flat
       await createFlat({
         flatId: flatId.trim(),
         tenantName: tenantName.trim() || undefined,
         tariffPerUnit: parsedTariff,
-        userUid: userUid.trim(),
+        userId,
         initialReading: parsedInitial,
       })
 
-      setSuccess('Flat created successfully.')
+      setSuccess('Tenant and flat created successfully.')
       // Clear form but keep tariff as it is usually the same.
       setFlatId('')
       setInitialReading('')
       setTenantName('')
-      setUserUid('')
+      setUsername('')
+      setPassword('')
     } catch (err) {
       // eslint-disable-next-line no-console
-      console.error('Error creating flat:', err)
+      console.error('Error creating tenant:', err)
       setError(
-        err instanceof Error ? err.message : 'Failed to create flat. Please try again.',
+        err instanceof Error ? err.message : 'Failed to create tenant. Please try again.',
       )
     } finally {
       setSubmitting(false)
@@ -81,7 +93,7 @@ const AdminFlatsPage = () => {
 
   return (
     <Layout
-      email={user.email}
+      username={user.username}
       role="admin"
       subtitle="Create and manage flat entries in Firestore."
     >
@@ -89,10 +101,9 @@ const AdminFlatsPage = () => {
         <div className="card">
           <div className="card-header">
             <div>
-              <h2 className="card-title">Create new flat</h2>
+              <h2 className="card-title">Create new tenant & flat</h2>
               <p className="card-subtitle">
-                Add a document to the <code>flats</code> collection with the
-                required fields.
+                Create a tenant user account and associated flat.
               </p>
             </div>
             <button
@@ -105,8 +116,8 @@ const AdminFlatsPage = () => {
           </div>
 
           <form className="stack" onSubmit={handleSubmit}>
-            <div className="row" style={{ gap: 16, flexWrap: 'wrap' }}>
-              <div style={{ flex: '1 1 220px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+              <div>
                 <label className="label" htmlFor="flat-id">
                   Flat ID
                 </label>
@@ -121,7 +132,7 @@ const AdminFlatsPage = () => {
                 />
               </div>
 
-              <div style={{ flex: '1 1 220px' }}>
+              <div>
                 <label className="label" htmlFor="initial-reading">
                   Initial reading
                 </label>
@@ -136,7 +147,7 @@ const AdminFlatsPage = () => {
                 />
               </div>
 
-              <div style={{ flex: '1 1 220px' }}>
+              <div>
                 <label className="label" htmlFor="tariff">
                   Tariff per unit
                 </label>
@@ -167,23 +178,36 @@ const AdminFlatsPage = () => {
               />
             </div>
 
-            <div>
-              <label className="label" htmlFor="user-uid">
-                User UID
-              </label>
-              <input
-                id="user-uid"
-                className="input"
-                type="text"
-                placeholder='Paste the user UID from Firebase Authentication'
-                value={userUid}
-                onChange={(e) => setUserUid(e.target.value)}
-                required
-              />
-              <p className="muted small">
-                Hint: open Firebase Authentication, copy the tenant&apos;s{' '}
-                <code>uid</code>, and paste it here.
-              </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+              <div>
+                <label className="label" htmlFor="username">
+                  Username
+                </label>
+                <input
+                  id="username"
+                  className="input"
+                  type="text"
+                  placeholder='e.g. "flat_a101"'
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="label" htmlFor="password">
+                  Password
+                </label>
+                <input
+                  id="password"
+                  className="input"
+                  type="password"
+                  placeholder="Set tenant password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
             </div>
 
             <button
@@ -191,7 +215,7 @@ const AdminFlatsPage = () => {
               type="submit"
               disabled={submitting}
             >
-              {submitting ? 'Creating…' : 'Create flat'}
+              {submitting ? 'Creating…' : 'Create tenant & flat'}
             </button>
 
             {error ? <div className="status rejected">{error}</div> : null}
