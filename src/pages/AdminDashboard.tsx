@@ -177,26 +177,11 @@ const AdminDashboard = () => {
       setFlatIdToTenantName(tenantNameMap)
       
       // Build flatOptions from ALL readings (not filtered) so dropdown always shows all flats
-      // Sort by most recent reading date (last added first)
-      const flatLastActivity = new Map<string, number>()
-      allApprovedItems.forEach((r) => {
-        const timestamp = r.approvedAt || r.createdAt || 0
-        const existing = flatLastActivity.get(r.flatId) || 0
-        if (timestamp > existing) {
-          flatLastActivity.set(r.flatId, timestamp)
-        }
-      })
-      allRejectedItems.forEach((r) => {
-        const timestamp = r.createdAt || 0
-        const existing = flatLastActivity.get(r.flatId) || 0
-        if (timestamp > existing) {
-          flatLastActivity.set(r.flatId, timestamp)
-        }
-      })
-      const sortedFlats = Array.from(flatLastActivity.keys()).sort((a, b) => {
-        return (flatLastActivity.get(b) || 0) - (flatLastActivity.get(a) || 0)
-      })
-      setFlatOptions(sortedFlats)
+      // Sort alphabetically: A3, F4, G4
+      const ids = new Set<string>()
+      allApprovedItems.forEach((r) => ids.add(r.flatId))
+      allRejectedItems.forEach((r) => ids.add(r.flatId))
+      setFlatOptions(Array.from(ids).sort())
     } catch (error) {
       console.error(error)
     } finally {
@@ -234,30 +219,12 @@ const AdminDashboard = () => {
   }, [flatFilter])
 
   // Update flat options whenever approved or rejected readings change
-  // Sort by most recent reading date (last added first)
+  // Sort alphabetically: A3, F4, G4
   useEffect(() => {
-    const flatLastActivity = new Map<string, number>()
-    // Process all approved readings
-    approvedHistory.forEach((r) => {
-      const timestamp = r.approvedAt || r.createdAt || 0
-      const existing = flatLastActivity.get(r.flatId) || 0
-      if (timestamp > existing) {
-        flatLastActivity.set(r.flatId, timestamp)
-      }
-    })
-    // Process all rejected readings
-    rejectedHistory.forEach((r) => {
-      const timestamp = r.createdAt || 0
-      const existing = flatLastActivity.get(r.flatId) || 0
-      if (timestamp > existing) {
-        flatLastActivity.set(r.flatId, timestamp)
-      }
-    })
-    // Sort flats by most recent activity (newest first)
-    const sortedFlats = Array.from(flatLastActivity.keys()).sort((a, b) => {
-      return (flatLastActivity.get(b) || 0) - (flatLastActivity.get(a) || 0)
-    })
-    setFlatOptions(sortedFlats)
+    const ids = new Set<string>()
+    approvedHistory.forEach((r) => ids.add(r.flatId))
+    rejectedHistory.forEach((r) => ids.add(r.flatId))
+    setFlatOptions(Array.from(ids).sort())
   }, [approvedHistory, rejectedHistory])
 
   const handleApprove = async (reading: Reading) => {
