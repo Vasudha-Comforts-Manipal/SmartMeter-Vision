@@ -177,10 +177,26 @@ const AdminDashboard = () => {
       setFlatIdToTenantName(tenantNameMap)
       
       // Build flatOptions from ALL readings (not filtered) so dropdown always shows all flats
-      const ids = new Set<string>()
-      allApprovedItems.forEach((r) => ids.add(r.flatId))
-      allRejectedItems.forEach((r) => ids.add(r.flatId))
-      setFlatOptions(Array.from(ids).sort())
+      // Sort by most recent reading date (last added first)
+      const flatLastActivity = new Map<string, number>()
+      allApprovedItems.forEach((r) => {
+        const timestamp = r.approvedAt || r.createdAt || 0
+        const existing = flatLastActivity.get(r.flatId) || 0
+        if (timestamp > existing) {
+          flatLastActivity.set(r.flatId, timestamp)
+        }
+      })
+      allRejectedItems.forEach((r) => {
+        const timestamp = r.createdAt || 0
+        const existing = flatLastActivity.get(r.flatId) || 0
+        if (timestamp > existing) {
+          flatLastActivity.set(r.flatId, timestamp)
+        }
+      })
+      const sortedFlats = Array.from(flatLastActivity.keys()).sort((a, b) => {
+        return (flatLastActivity.get(b) || 0) - (flatLastActivity.get(a) || 0)
+      })
+      setFlatOptions(sortedFlats)
     } catch (error) {
       console.error(error)
     } finally {
@@ -202,25 +218,11 @@ const AdminDashboard = () => {
     // Subscribe to approved readings
     const unsubscribeApproved = subscribeToApprovedReadings((readings) => {
       setApprovedHistory(readings)
-      // Update flat options when approved readings change
-      const ids = new Set<string>()
-      readings.forEach((r) => ids.add(r.flatId))
-      setFlatOptions((prev) => {
-        const combined = new Set([...prev, ...ids])
-        return Array.from(combined).sort()
-      })
     }, flatFilter || undefined)
 
     // Subscribe to rejected readings
     const unsubscribeRejected = subscribeToRejectedReadings((readings) => {
       setRejectedHistory(readings)
-      // Update flat options when rejected readings change
-      const ids = new Set<string>()
-      readings.forEach((r) => ids.add(r.flatId))
-      setFlatOptions((prev) => {
-        const combined = new Set([...prev, ...ids])
-        return Array.from(combined).sort()
-      })
     }, flatFilter || undefined)
 
     // Cleanup subscriptions on unmount or when flatFilter changes
@@ -230,6 +232,33 @@ const AdminDashboard = () => {
       unsubscribeRejected()
     }
   }, [flatFilter])
+
+  // Update flat options whenever approved or rejected readings change
+  // Sort by most recent reading date (last added first)
+  useEffect(() => {
+    const flatLastActivity = new Map<string, number>()
+    // Process all approved readings
+    approvedHistory.forEach((r) => {
+      const timestamp = r.approvedAt || r.createdAt || 0
+      const existing = flatLastActivity.get(r.flatId) || 0
+      if (timestamp > existing) {
+        flatLastActivity.set(r.flatId, timestamp)
+      }
+    })
+    // Process all rejected readings
+    rejectedHistory.forEach((r) => {
+      const timestamp = r.createdAt || 0
+      const existing = flatLastActivity.get(r.flatId) || 0
+      if (timestamp > existing) {
+        flatLastActivity.set(r.flatId, timestamp)
+      }
+    })
+    // Sort flats by most recent activity (newest first)
+    const sortedFlats = Array.from(flatLastActivity.keys()).sort((a, b) => {
+      return (flatLastActivity.get(b) || 0) - (flatLastActivity.get(a) || 0)
+    })
+    setFlatOptions(sortedFlats)
+  }, [approvedHistory, rejectedHistory])
 
   const handleApprove = async (reading: Reading) => {
     const raw = (corrections[reading.id] ?? '').trim()
