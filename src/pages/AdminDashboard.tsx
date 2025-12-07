@@ -148,14 +148,13 @@ const AdminDashboard = () => {
       // Determine which flats still need an initial reading configured.
       // Show the "Initial Readings" section only for:
       // - flats that have no approved readings yet, AND
-      // - flats whose initialReading is either null/undefined or 0.
+      // - flats whose initialReading is null or undefined (0 is a valid initial reading).
       const flatsWithApprovedReadings = new Set<string>()
       approvedItems.forEach((r) => flatsWithApprovedReadings.add(r.flatId))
       const flatsNeedingInitialReading = allFlats.filter((flat) => {
         const hasApproved = flatsWithApprovedReadings.has(flat.flatId)
         const initial = flat.initialReading
-        const hasNoExplicitInitial =
-          initial === null || initial === undefined || initial === 0
+        const hasNoExplicitInitial = initial === null || initial === undefined
         return !hasApproved && hasNoExplicitInitial
       })
       setFlats(flatsNeedingInitialReading)

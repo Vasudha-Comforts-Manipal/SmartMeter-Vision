@@ -67,6 +67,16 @@ const LoginPage = () => {
             </button>
             {error ? <div className="status rejected">{error}</div> : null}
           </form>
+          <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #e0e0e0', textAlign: 'center' }}>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={() => navigate('/superuser/login')}
+              style={{ fontSize: '12px', color: '#666' }}
+            >
+              Super User Access
+            </button>
+          </div>
         </div>
       </div>
     </div>

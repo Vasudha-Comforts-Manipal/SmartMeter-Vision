@@ -4,13 +4,25 @@ import TenantDashboard from '../pages/TenantDashboard'
 import AdminDashboard from '../pages/AdminDashboard'
 import AdminFlatsPage from '../pages/AdminFlatsPage'
 import AdminUsersPage from '../pages/AdminUsersPage'
+import SuperUserLoginPage from '../pages/SuperUserLoginPage'
+import SuperUserDashboard from '../pages/SuperUserDashboard'
 import ProtectedRoute from '../components/ProtectedRoute'
+import SuperUserProtectedRoute from '../components/SuperUserProtectedRoute'
 
 const Router = () => {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/superuser/login" element={<SuperUserLoginPage />} />
+        <Route
+          path="/superuser"
+          element={
+            <SuperUserProtectedRoute>
+              <SuperUserDashboard />
+            </SuperUserProtectedRoute>
+          }
+        />
         <Route
           path="/tenant"
           element={
