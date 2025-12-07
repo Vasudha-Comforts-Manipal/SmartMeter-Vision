@@ -1,5 +1,5 @@
 import type { FormEvent } from 'react'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getAllUsers, updateUserPassword } from '../services/users'
 import { getCurrentSuperUser, logoutSuperUser } from '../services/superUserAuth'
@@ -7,7 +7,8 @@ import type { User } from '../types/models'
 
 const SuperUserDashboard = () => {
   const navigate = useNavigate()
-  const superUser = getCurrentSuperUser()
+  // Memoize superUser to prevent unnecessary re-renders
+  const superUser = useMemo(() => getCurrentSuperUser(), [])
   const [adminUsers, setAdminUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedAdminId, setSelectedAdminId] = useState<string | null>(null)
@@ -22,8 +23,10 @@ const SuperUserDashboard = () => {
       navigate('/superuser/login', { replace: true })
       return
     }
+    // Only load admin users once when component mounts
     loadAdminUsers()
-  }, [superUser, navigate])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Empty dependency array - only run on mount
 
   const loadAdminUsers = async () => {
     setLoading(true)
