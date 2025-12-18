@@ -175,8 +175,6 @@ const SummaryModal = ({ approvedReadings, onClose }: Props) => {
       backgroundColor: '#ffffff',
     })
 
-    const imgData = canvas.toDataURL('image/png')
-
     const doc = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
